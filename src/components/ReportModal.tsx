@@ -77,8 +77,8 @@ export const ReportModal: React.FC<ReportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in">
-      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden text-slate-100">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in">
+      <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden text-slate-100 max-h-[92dvh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-slate-800 bg-slate-950/50">
           <div className="flex items-center gap-3">
@@ -99,7 +99,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-5">
           {errorMsg && (
             <div className="p-3.5 bg-red-500/10 border border-red-500/30 rounded-2xl text-xs text-red-300 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />

@@ -530,7 +530,6 @@ export default function App() {
           setSelectedDelegation(del);
           setIsReportModalOpen(true);
         }}
-        onSimulateOutage={handleSimulateOutage}
         activeLanguage={activeLanguage}
       />
 

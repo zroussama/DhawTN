@@ -270,13 +270,13 @@ export const PowerMap: React.FC<PowerMapProps> = ({
         const pingIcon = L.divIcon({
           className: 'steg-ping-marker',
           html: `
-            <div style="position: relative; width: 24px; height: 24px;">
+            <div class="steg-ping-marker-wrapper">
               <div class="steg-ping-ring"></div>
               <div class="steg-ping-dot"></div>
             </div>
           `,
-          iconSize: [24, 24],
-          iconAnchor: [12, 12]
+          iconSize: [48, 48],
+          iconAnchor: [24, 24]
         });
 
         const stegMarker = L.marker(del.centroid, { icon: pingIcon });
@@ -519,8 +519,9 @@ export const PowerMap: React.FC<PowerMapProps> = ({
         align-items: center;
         justify-content: flex-end;
         width: 160px;
-        height: 48px;
+        height: 52px;
         pointer-events: none;
+        overflow: visible;
       ">
         <div style="
           background: #f59e0b;
@@ -547,14 +548,14 @@ export const PowerMap: React.FC<PowerMapProps> = ({
           background: #3b82f6;
           border: 3px solid #ffffff;
           box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.4), 0 0 16px #3b82f6;
+          flex-shrink: 0;
         "></div>
       </div>`;
-
       const userIcon = L.divIcon({
         html: iconHtml,
         className: 'user-location-badge-pin',
-        iconSize: [160, 48],
-        iconAnchor: [80, 38]
+        iconSize: [160, 52],
+        iconAnchor: [80, 52]
       });
 
       const marker = L.marker(userLocation, { icon: userIcon });

@@ -24,8 +24,8 @@
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.8);
   }
   70% {
-    transform: scale(1.15);
-    box-shadow: 0 0 0 16px rgba(239, 68, 68, 0);
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
   }
   100% {
     transform: scale(0.95);
@@ -33,21 +33,35 @@
   }
 }
 
+/* Radar ring: expand from center then fade — confined inside overflow:hidden wrapper */
 @keyframes steg-radar-ping {
   0% {
-    transform: scale(0.5);
-    opacity: 1;
+    transform: scale(1);
+    opacity: 0.9;
   }
   100% {
-    transform: scale(3.5);
+    transform: scale(2.8);
     opacity: 0;
   }
 }
 
+/* Outer overflow wrapper clips the expanding ring to prevent it escaping vertically */
+.steg-ping-marker-wrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
 .steg-ping-dot {
   position: absolute;
-  top: 5px;
-  left: 5px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   width: 14px;
   height: 14px;
   background-color: #ef4444;
@@ -56,17 +70,22 @@
   box-shadow: 0 0 12px #ef4444;
   animation: steg-pulse 1.8s infinite ease-in-out;
   z-index: 2;
+  pointer-events: auto;
 }
 
 .steg-ping-ring {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 24px;
-  height: 24px;
+  top: 50%;
+  left: 50%;
+  /* start at 12x12 centered, ring expands outward only */
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  margin-left: -6px;
   border-radius: 50%;
   border: 2px solid #ef4444;
-  background: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.2);
+  transform-origin: center center;
   animation: steg-radar-ping 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
   z-index: 1;
 }

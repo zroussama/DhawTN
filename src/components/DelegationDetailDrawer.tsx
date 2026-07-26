@@ -8,11 +8,8 @@ import {
   Volume2,
   Clock,
   ShieldAlert,
-  Activity,
   CheckCircle2,
   AlertCircle,
-  Play,
-  RotateCcw
 } from 'lucide-react';
 import { Delegation, OutageReport, AudioLanguage } from '../types';
 
@@ -24,7 +21,6 @@ interface DelegationDetailDrawerProps {
   onToggleSubscription: (del: Delegation) => void;
   onSpeakAlert: (delName: string) => void;
   onReportForDelegation: (del: Delegation) => void;
-  onSimulateOutage: (delId: number, action: 'TRIGGER_CONSENSUS_OUTAGE' | 'RESOLVE_OUTAGE') => void;
   activeLanguage: AudioLanguage;
 }
 
@@ -36,7 +32,6 @@ export const DelegationDetailDrawer: React.FC<DelegationDetailDrawerProps> = ({
   onToggleSubscription,
   onSpeakAlert,
   onReportForDelegation,
-  onSimulateOutage,
   activeLanguage
 }) => {
   if (!delegation) return null;
@@ -162,33 +157,6 @@ export const DelegationDetailDrawer: React.FC<DelegationDetailDrawerProps> = ({
             <Volume2 className="w-4 h-4 text-amber-400" />
             <span>Ecouter l'Alerte Vocale "الضو رجع" ({activeLanguage === 'AR_TN' ? 'Darija' : activeLanguage})</span>
           </button>
-        </div>
-
-        {/* Real-time Crowdsource Demo Simulation Actions */}
-        <div className="p-4 bg-slate-950/80 rounded-2xl border border-slate-800/80 space-y-2">
-          <h4 className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-            <Activity className="w-4 h-4 text-cyan-400" /> Démonstrateur de Consensus en Direct
-          </h4>
-          <p className="text-[11px] text-slate-400">
-            Simulez la détection de panne ou le rétablissement de l'électricité dans cette zone:
-          </p>
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <button
-              onClick={() => onSimulateOutage(delegation.id, 'TRIGGER_CONSENSUS_OUTAGE')}
-              className="py-2 px-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-300 border border-red-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <Play className="w-3.5 h-3.5 text-red-400" />
-              <span>Simuler Panne (3x)</span>
-            </button>
-
-            <button
-              onClick={() => onSimulateOutage(delegation.id, 'RESOLVE_OUTAGE')}
-              className="py-2 px-2.5 rounded-xl bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
-            >
-              <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Rétablir (الضو رجع)</span>
-            </button>
-          </div>
         </div>
 
         {/* Timeline of Recent Reports */}
