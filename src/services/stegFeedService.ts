@@ -49,30 +49,56 @@ export class STEGFeedService {
     }
   }
 
-  // Primary method: Try sources in order
+  // Primary method: Fetch from API or fallback
   async fetchLatestAnnouncements(): Promise<STEGFeedResult> {
-    const sources: STEGSourceType[] = ['RSS', 'SCRAPER', 'APIFY'];
-    
-    for (const source of sources) {
-      try {
-        const result = await this.fetchFromSource(source);
-        if (result.success && result.announcements.length > 0) {
-          this.mergeAnnouncements(result.announcements);
-          return result;
+    try {
+      const response = await fetch('/api/steg-announcements');
+      if (response.ok) {
+        const data = await response.json();
+        if (Array.isArray(data)) {
+          this.announcements = data;
+          this.saveToStorage();
+          return {
+            source: 'SCRAPER',
+            announcements: this.announcements,
+            timestamp: new Date().toISOString(),
+            success: true
+          };
         }
-      } catch (error) {
-        console.warn(`STEG Feed Source ${source} failed:`, error);
       }
+    } catch (err) {
+      console.warn('Failed to fetch STEG announcements from server:', err);
     }
 
-    // Return cached if available
+    // Return cached if server unreachable
     return {
       source: 'MANUAL',
       announcements: this.announcements,
       timestamp: new Date(this.lastFetchTime || Date.now()).toISOString(),
-      success: this.announcements.length > 0,
-      error: this.announcements.length === 0 ? 'All live feed sources offline' : undefined
+      success: this.announcements.length > 0
     };
+  }
+
+  // Submit citizen vote for power restoration (الضو رجع / مزال)
+  async voteRestoration(announcementId: string, delegationId: number, vote: 'RESTORED' | 'STILL_OFF'): Promise<{ success: boolean; restoredVotesCount?: number; stillOffVotesCount?: number; currentStatus?: string }> {
+    try {
+      const deviceHash = `device_${Math.random().toString(36).substring(2, 9)}`;
+      const response = await fetch('/api/steg-restoration-vote', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ announcementId, delegationId, vote, deviceHash })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        // Refresh local list
+        await this.fetchLatestAnnouncements();
+        return result;
+      }
+    } catch (err) {
+      console.warn('Restoration vote failed:', err);
+    }
+    return { success: false };
   }
 
   private async fetchFromSource(source: STEGSourceType): Promise<STEGFeedResult> {
@@ -179,10 +205,19 @@ export class STEGFeedService {
   }
 
   // SOLUTION 4: Manual Entry via Admin Panel
-  manualEntry(postText: string): STEGAnnouncement | null {
+  async manualEntry(postText: string): Promise<STEGAnnouncement | null> {
     const parsed = this.parser.parseFacebookPost(postText, this.delegations);
     if (parsed) {
       parsed.source = 'MANUAL';
+      try {
+        await fetch('/api/steg-announcements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed)
+        });
+      } catch (err) {
+        console.warn('Failed to post announcement to server:', err);
+      }
       this.mergeAnnouncements([parsed]);
       return parsed;
     }

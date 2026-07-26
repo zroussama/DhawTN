@@ -21,6 +21,7 @@ import { ConsensusDashboard } from './components/ConsensusDashboard';
 import { AiGridAnalystModal } from './components/AiGridAnalystModal';
 import { AudioTestControl } from './components/AudioTestControl';
 import { PWAInstallBanner } from './components/PWAInstallBanner';
+import { STEGRestorationVoteToast } from './components/STEGRestorationVoteToast';
 import { LiveWallStreetTicker } from './components/LiveWallStreetTicker';
 import { audioAlertService } from './services/audioAlertService';
 import { offlineStorage } from './services/offlineStorage';
@@ -63,6 +64,7 @@ export default function App() {
   const [isAdminStegOpen, setIsAdminStegOpen] = useState<boolean>(false);
   const [isAdminRoute, setIsAdminRoute] = useState<boolean>(false);
   const [stegAnnouncements, setStegAnnouncements] = useState<STEGAnnouncement[]>([]);
+  const [activeToastAnnouncement, setActiveToastAnnouncement] = useState<STEGAnnouncement | null>(null);
   const [isSubmittingReport, setIsSubmittingReport] = useState<boolean>(false);
 
   // Audio Language Preference
@@ -186,28 +188,39 @@ export default function App() {
     return () => window.removeEventListener('popstate', checkIsAdmin);
   }, []);
 
-  // Load STEG announcements when delegations are ready & sync affected zones
+  // Load STEG announcements from API and check for restoration toast prompt
   useEffect(() => {
-    if (delegations.length > 0) {
-      const feedService = new STEGFeedService(delegations);
-      const annList = feedService.getAnnouncements();
-      setStegAnnouncements(annList);
+    const fetchAnnouncements = async () => {
+      if (delegations.length > 0) {
+        const feedService = new STEGFeedService(delegations);
+        const result = await feedService.fetchLatestAnnouncements();
+        const annList = result.announcements || [];
+        setStegAnnouncements(annList);
 
-      if (annList.length > 0) {
-        const affectedIds = new Set(annList.flatMap(a => a.affectedAreas.map(area => area.delegationId)));
-        if (affectedIds.size > 0) {
-          setDelegations(prev =>
-            prev.map(del => {
-              if (affectedIds.has(del.id) && del.status === 'NONE') {
-                return { ...del, status: 'POWER_OFF', activeOffCount: Math.max(del.activeOffCount, 5) };
-              }
-              return del;
-            })
-          );
+        if (annList.length > 0) {
+          // Check if any announcement is RESTORED_PENDING to prompt citizen vote
+          const pendingAnn = annList.find(a => a.restorationStatus === 'RESTORED_PENDING');
+          if (pendingAnn) {
+            setActiveToastAnnouncement(pendingAnn);
+          }
+
+          const affectedIds = new Set(annList.flatMap(a => a.affectedAreas.map(area => area.delegationId)));
+          if (affectedIds.size > 0) {
+            setDelegations(prev =>
+              prev.map(del => {
+                if (affectedIds.has(del.id) && del.status === 'NONE') {
+                  return { ...del, status: 'POWER_OFF', activeOffCount: Math.max(del.activeOffCount, 5) };
+                }
+                return del;
+              })
+            );
+          }
         }
       }
-    }
-  }, []);
+    };
+
+    fetchAnnouncements();
+  }, [delegations.length]);
 
   // Update delegations state when a new announcement is added manually
   const handleAnnouncementAdded = (newAnn: STEGAnnouncement) => {
@@ -420,6 +433,22 @@ export default function App() {
     });
   };
 
+  // Handle citizen restoration vote (الضو رجع / مزال)
+  const handleRestorationVote = async (announcementId: string, delegationId: number, vote: 'RESTORED' | 'STILL_OFF') => {
+    const feedService = new STEGFeedService(delegations);
+    const res = await feedService.voteRestoration(announcementId, delegationId, vote);
+    
+    if (res.success) {
+      if (vote === 'RESTORED') {
+        confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
+        audioAlertService.speakRestorationAlert(activeLanguage, selectedDelegation?.name || 'Tunisie');
+      }
+      fetchGridData();
+      const updated = await feedService.fetchLatestAnnouncements();
+      setStegAnnouncements(updated.announcements || []);
+    }
+  };
+
   return (
     <div className="h-[100dvh] w-screen bg-slate-950 text-slate-100 flex flex-col font-sans select-none overflow-hidden">
       {/* Header Bar */}
@@ -596,6 +625,16 @@ export default function App() {
           setStegAnnouncements([]);
         }}
       />
+
+      {/* STEG Restoration Vote Toast Prompt */}
+      {activeToastAnnouncement && (
+        <STEGRestorationVoteToast
+          announcement={activeToastAnnouncement}
+          onClose={() => setActiveToastAnnouncement(null)}
+          onVote={handleRestorationVote}
+          userDelegationId={userSession?.delegationId}
+        />
+      )}
 
       {/* PWA Install Banner */}
       {showPwaBanner && (

@@ -19,6 +19,8 @@ const PORT = 3000;
 let delegations: Delegation[] = [...INITIAL_DELEGATIONS];
 let gridLines: GridLine[] = [...INITIAL_GRID_LINES];
 let reports: OutageReport[] = [];
+let stegAnnouncements: any[] = [];
+let stegRestorationVotes: { announcementId: string; deviceHash: string; vote: 'RESTORED' | 'STILL_OFF'; delegationId: number; timestamp: string }[] = [];
 const rateLimitMap = new Map<string, number>(); // deviceHash/ip -> lastReportTimestamp
 
 // Helper to calculate distance in KM between two lat/lng points
@@ -131,6 +133,150 @@ app.get('/api/delegations', (req, res) => {
 // 3. Grid Lines & Power Plants
 app.get('/api/grid-lines', (req, res) => {
   res.json({ gridLines, powerPlants: INITIAL_POWER_PLANTS });
+});
+
+// 3.1 GET STEG Announcements (Time-aware filtering)
+app.get('/api/steg-announcements', (req, res) => {
+  const now = new Date();
+  
+  // Filter and update restoration status dynamically based on current time
+  const updatedList = stegAnnouncements
+    .map(ann => {
+      const expiresAtDate = new Date(ann.expiresAt);
+      const isPastExpiry = now > expiresAtDate;
+      
+      let restorationStatus = ann.restorationStatus || 'ACTIVE';
+
+      // Count votes
+      const votesForAnn = stegRestorationVotes.filter(v => v.announcementId === ann.id);
+      const restoredVotes = votesForAnn.filter(v => v.vote === 'RESTORED').length;
+      const stillOffVotes = votesForAnn.filter(v => v.vote === 'STILL_OFF').length;
+
+      // Evaluation rules:
+      // If past time_end:
+      if (isPastExpiry && restorationStatus === 'ACTIVE') {
+        restorationStatus = 'RESTORED_PENDING';
+      }
+
+      // Consensus check: >= 3 RESTORED votes confirms restoration (green established)
+      if (restoredVotes >= 3) {
+        restorationStatus = 'CONFIRMED_RESTORED';
+      } else if (stillOffVotes >= 5 && isPastExpiry) {
+        // If 5+ users confirm power is STILL OFF even after expiry, keep active
+        restorationStatus = 'ACTIVE';
+      }
+
+      return {
+        ...ann,
+        restorationStatus,
+        restoredVotesCount: restoredVotes,
+        stillOffVotesCount: stillOffVotes,
+        isPastExpiry
+      };
+    })
+    // Filter out announcements expired for more than 24h
+    .filter(ann => {
+      const expiresAtDate = new Date(ann.expiresAt);
+      const twentyFourHoursAfterExpiry = new Date(expiresAtDate.getTime() + 24 * 60 * 60 * 1000);
+      return now < twentyFourHoursAfterExpiry;
+    });
+
+  res.json(updatedList);
+});
+
+// 3.2 POST STEG Announcement (Create new announcement from Admin or Feed)
+app.post('/api/steg-announcements', (req, res) => {
+  try {
+    const announcement = req.body;
+    if (!announcement || !announcement.rawText) {
+      return res.status(400).json({ error: 'Announcement content is required' });
+    }
+
+    // Deduplicate by ID or rawText
+    const existingIndex = stegAnnouncements.findIndex(a => a.id === announcement.id || a.rawText === announcement.rawText);
+    if (existingIndex >= 0) {
+      stegAnnouncements[existingIndex] = { ...stegAnnouncements[existingIndex], ...announcement };
+    } else {
+      stegAnnouncements.unshift(announcement);
+    }
+
+    // Auto-update affected delegations status
+    if (announcement.affectedAreas && announcement.affectedAreas.length > 0) {
+      const affectedIds = new Set(announcement.affectedAreas.map((a: any) => a.delegationId));
+      delegations.forEach(del => {
+        if (affectedIds.has(del.id) && del.status === 'NONE') {
+          del.status = 'POWER_OFF';
+          del.activeOffCount = Math.max(del.activeOffCount, 5);
+        }
+      });
+    }
+
+    res.json({ success: true, announcement });
+  } catch (err: unknown) {
+    res.status(500).json({ error: 'Failed to save STEG announcement' });
+  }
+});
+
+// 3.3 POST STEG Restoration Vote (Vote "الضو رجع" / "مزال")
+app.post('/api/steg-restoration-vote', (req, res) => {
+  try {
+    const { announcementId, delegationId, vote, deviceHash } = req.body;
+
+    if (!announcementId || !vote || !deviceHash) {
+      return res.status(400).json({ error: 'announcementId, vote (RESTORED|STILL_OFF) and deviceHash are required' });
+    }
+
+    // Check if user already voted for this announcement
+    const existingVoteIndex = stegRestorationVotes.findIndex(
+      v => v.announcementId === announcementId && v.deviceHash === deviceHash
+    );
+
+    if (existingVoteIndex >= 0) {
+      stegRestorationVotes[existingVoteIndex].vote = vote;
+      stegRestorationVotes[existingVoteIndex].timestamp = new Date().toISOString();
+    } else {
+      stegRestorationVotes.push({
+        announcementId,
+        delegationId: Number(delegationId),
+        deviceHash,
+        vote,
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    // Evaluate consensus for this announcement
+    const votesForAnn = stegRestorationVotes.filter(v => v.announcementId === announcementId);
+    const restoredCount = votesForAnn.filter(v => v.vote === 'RESTORED').length;
+    const stillOffCount = votesForAnn.filter(v => v.vote === 'STILL_OFF').length;
+
+    const ann = stegAnnouncements.find(a => a.id === announcementId);
+    if (ann) {
+      if (restoredCount >= 3) {
+        ann.restorationStatus = 'CONFIRMED_RESTORED';
+        // Reset affected delegations to RESOLVED
+        if (ann.affectedAreas) {
+          ann.affectedAreas.forEach((area: any) => {
+            const del = delegations.find(d => d.id === area.delegationId);
+            if (del) {
+              del.status = 'RESOLVED';
+              del.lastResolvedTime = new Date().toISOString();
+            }
+          });
+        }
+      } else if (stillOffCount >= 5) {
+        ann.restorationStatus = 'ACTIVE';
+      }
+    }
+
+    res.json({
+      success: true,
+      restoredVotesCount: restoredCount,
+      stillOffVotesCount: stillOffCount,
+      currentStatus: ann?.restorationStatus || 'ACTIVE'
+    });
+  } catch (err: unknown) {
+    res.status(500).json({ error: 'Failed to process restoration vote' });
+  }
 });
 
 // 4. Get all Outage Reports

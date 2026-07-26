@@ -262,17 +262,35 @@ export const PowerMap: React.FC<PowerMapProps> = ({
     group.clearLayers();
     if (!showMicroZones) return;
 
-    // 1. Render Pulsing Red Pings for STEG Cut Areas
+    // 1. Render Pulsing Pings for STEG Cut & Restored Areas
     delegations.forEach(del => {
       if (stegAffectedIds.has(del.id)) {
         if (selectedGovernorate !== 'ALL' && del.governorate.toLowerCase() !== selectedGovernorate.toLowerCase()) return;
+
+        // Find associated announcement to check restorationStatus
+        const matchAnn = stegAnnouncements.find(a =>
+          a.affectedAreas.some(area => area.delegationId === del.id)
+        );
+
+        const resStatus = matchAnn?.restorationStatus || 'ACTIVE';
+        const isRestored = resStatus === 'CONFIRMED_RESTORED';
+        const isPendingRestoration = resStatus === 'RESTORED_PENDING';
+
+        const dotClass = isRestored || isPendingRestoration ? 'steg-ping-dot-green' : 'steg-ping-dot';
+        const ringClass = isRestored || isPendingRestoration ? 'steg-ping-ring-green' : 'steg-ping-ring';
+        const borderColor = isRestored || isPendingRestoration ? '#10b981' : '#ef4444';
+        const titleText = isRestored
+          ? '💡 COURANT RÉTABLI (الضو رجع)'
+          : isPendingRestoration
+          ? '🟡 FIN DE CRÉNEAU (EN ATTENTE CONFIRMATION)'
+          : '⚡ DÉLESTAGE STEG (PROGRAMMÉ)';
 
         const pingIcon = L.divIcon({
           className: 'steg-ping-marker',
           html: `
             <div class="steg-ping-marker-wrapper">
-              <div class="steg-ping-ring"></div>
-              <div class="steg-ping-dot"></div>
+              <div class="${ringClass}"></div>
+              <div class="${dotClass}"></div>
             </div>
           `,
           iconSize: [48, 48],
@@ -282,15 +300,15 @@ export const PowerMap: React.FC<PowerMapProps> = ({
         const stegMarker = L.marker(del.centroid, { icon: pingIcon });
 
         stegMarker.bindTooltip(
-          `<div style="font-family: system-ui, sans-serif; font-size: 11px; color: #f8fafc; background: #020617; padding: 8px 12px; border-radius: 12px; border: 1.5px solid #ef4444; box-shadow: 0 8px 24px rgba(239, 68, 68, 0.5);">
-            <div style="font-weight: 900; color: #ef4444; font-size: 12px; display: flex; align-items: center; gap: 4px;">
-              ⚡ DÉLESTAGE STEG (PING ROUGE)
+          `<div style="font-family: system-ui, sans-serif; font-size: 11px; color: #f8fafc; background: #020617; padding: 8px 12px; border-radius: 12px; border: 1.5px solid ${borderColor}; box-shadow: 0 8px 24px ${borderColor}80;">
+            <div style="font-weight: 900; color: ${borderColor}; font-size: 12px; display: flex; align-items: center; gap: 4px;">
+              ${titleText}
             </div>
             <div style="font-size: 12px; font-weight: 800; color: #ffffff; margin-top: 2px;">
               ${del.nameAr || del.name} — ${del.governorate}
             </div>
-            <div style="font-size: 10px; color: #fca5a5; margin-top: 3px; font-weight: bold;">
-              ⏰ Coupure programmée aujourd'hui
+            <div style="font-size: 10px; color: #cbd5e1; margin-top: 3px; font-weight: bold;">
+              ⏰ Horaire: ${matchAnn?.timeRange.start || '11:00'} - ${matchAnn?.timeRange.end || '17:00'}
             </div>
           </div>`,
           { sticky: true, opacity: 0.98 }

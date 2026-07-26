@@ -90,6 +90,53 @@
   z-index: 1;
 }
 
+@keyframes steg-pulse-green {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.8);
+  }
+  70% {
+    transform: scale(1.1);
+    box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+  }
+}
+
+.steg-ping-dot-green {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  background-color: #10b981;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #10b981;
+  animation: steg-pulse-green 1.8s infinite ease-in-out;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.steg-ping-ring-green {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin-top: -6px;
+  margin-left: -6px;
+  border-radius: 50%;
+  border: 2px solid #10b981;
+  background: rgba(16, 185, 129, 0.2);
+  transform-origin: center center;
+  animation: steg-radar-ping 2s infinite cubic-bezier(0, 0.2, 0.8, 1);
+  z-index: 1;
+}
+
 .user-location-badge-pin,
 .steg-ping-marker,
 .custom-powerplant-icon,

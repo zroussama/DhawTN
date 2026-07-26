@@ -22,6 +22,8 @@ export type AudioLanguage = 'AR_TN' | 'FR' | 'EN';
 
 export type RegionZone = 'NORTH' | 'COAST' | 'CENTER' | 'SOUTH';
 
+export type STEGRestorationStatus = 'ACTIVE' | 'RESTORED_PENDING' | 'CONFIRMED_RESTORED' | 'EXPIRED';
+
 export interface OutageReport {
   id: string;
   delegationId: number;

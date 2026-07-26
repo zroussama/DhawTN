@@ -19,7 +19,11 @@ export interface STEGAnnouncement {
   affectedAreas: STEGAffectedArea[];
   rawText: string;
   createdAt: string;
+  expiresAt: string;
   source: 'RSS' | 'SCRAPER' | 'APIFY' | 'MANUAL';
+  restorationStatus?: 'ACTIVE' | 'RESTORED_PENDING' | 'CONFIRMED_RESTORED' | 'EXPIRED';
+  restoredVotesCount?: number;
+  stillOffVotesCount?: number;
 }
 
 export class STEGParser {
@@ -159,6 +163,19 @@ export class STEGParser {
     else if (rawText.includes('الشمال')) regionHeader = 'الشمال (Nord)';
     else if (rawText.includes('الساحل')) regionHeader = 'الساحل (Sahel)';
 
+    // Compute expiresAt ISO string (Tunisia Time: UTC+1)
+    let expiresAt = new Date().toISOString();
+    try {
+      const targetDate = dateMatch ? dateMatch[0] : new Date().toISOString().split('T')[0];
+      const endTime = timeRange.end || '17:00';
+      // Format YYYY-MM-DDTHH:mm:00+01:00
+      const dateParts = targetDate.includes('-') ? targetDate : new Date().toISOString().split('T')[0];
+      expiresAt = new Date(`${dateParts}T${endTime}:00+01:00`).toISOString();
+    } catch (e) {
+      // Fallback: 4 hours from now
+      expiresAt = new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString();
+    }
+
     return {
       id,
       date,
@@ -167,7 +184,11 @@ export class STEGParser {
       affectedAreas,
       rawText,
       createdAt: new Date().toISOString(),
-      source: 'MANUAL'
+      expiresAt,
+      source: 'MANUAL',
+      restorationStatus: 'ACTIVE',
+      restoredVotesCount: 0,
+      stillOffVotesCount: 0
     };
   }
 }
