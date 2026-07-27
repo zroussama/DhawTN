@@ -4,14 +4,25 @@ import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import * as turf from '@turf/turf';
 import { GoogleGenAI } from '@google/genai';
-import { INITIAL_DELEGATIONS, INITIAL_GRID_LINES, INITIAL_POWER_PLANTS } from './src/data/tunisiaGeoData.js';
-import { Delegation, GridLine, OutageReport, OutageStatus, NationalGridStats } from './src/types.js';
+import { INITIAL_DELEGATIONS, INITIAL_GRID_LINES, INITIAL_POWER_PLANTS } from './src/data/tunisiaGeoData';
+import { Delegation, GridLine, OutageReport, OutageStatus, NationalGridStats } from './src/types';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(express.json());
+
+// Enable CORS for Vercel deployment
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 const PORT = 3000;
 
