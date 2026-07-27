@@ -37,7 +37,7 @@ export const AdminSTEGPanel: React.FC<AdminSTEGPanelProps> = ({
     setResult(null);
 
     try {
-      const announcement = feedService.manualEntry(postText);
+      const announcement = await feedService.manualEntry(postText);
       
       if (announcement) {
         onAnnouncementAdded(announcement);

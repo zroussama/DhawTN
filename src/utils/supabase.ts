@@ -1,12 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Support both Vite (import.meta.env) and Node/process.env safely
-const getEnvVar = (key: string) => {
-  if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) {
-    return import.meta.env[key];
+const getEnvVar = (key: string): string => {
+  if (typeof import.meta !== 'undefined' && (import.meta as any).env) {
+    const metaEnv = (import.meta as any).env;
+    if (metaEnv[key]) return metaEnv[key];
   }
   if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    return process.env[key];
+    return process.env[key] || '';
   }
   return '';
 };
