@@ -6,7 +6,9 @@ DhawTN is an open-source Progressive Web App (PWA) that enables Tunisian citizen
 
 Instead of relying solely on official communication, DhawTN aggregates community reports, applies a spatial consensus algorithm, and displays verified outages on an interactive map.
 
+<img width="640" height="360" alt="demo " src="https://github.com/user-attachments/assets/b2c3efc0-8736-46d0-b909-e0689de2124a" />
 ![Uploading demo .gif…]()
+
 
 
 ---
