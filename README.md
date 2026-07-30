@@ -13,7 +13,6 @@ Instead of relying solely on official communication, DhawTN aggregates community
 <img width="640" height="360" alt="demo " src="https://github.com/user-attachments/assets/b2c3efc0-8736-46d0-b909-e0689de2124a" />
 </p>
 
----
 
 ## 🌍 Why DhawTN?
 
