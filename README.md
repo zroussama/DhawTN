@@ -6,10 +6,14 @@ DhawTN is an open-source Progressive Web App (PWA) that enables Tunisian citizen
 
 Instead of relying solely on official communication, DhawTN aggregates community reports, applies a spatial consensus algorithm, and displays verified outages on an interactive map.
 
+## 📷 Preview
+
+
 <p align="center">
 <img width="640" height="360" alt="demo " src="https://github.com/user-attachments/assets/b2c3efc0-8736-46d0-b909-e0689de2124a" />
 </p>
 
+---
 
 ## 🌍 Why DhawTN?
 
@@ -77,11 +81,7 @@ Unfortunately, there is no public real-time outage map.
 
 ---
 
-## 📷 Preview
 
-Coming soon...
-
----
 
 ## 🧠 How it Works
 
@@ -104,7 +104,9 @@ Spatial Consensus Engine
             ▼
  Push Notification
 ```
-
+<p align="center">
+<img width="2518" height="3408" alt="mobile zone " src="https://github.com/user-attachments/assets/6810eaae-ead4-438c-b0f5-700ed932c68f" />
+</p>
 ---
 
 ## 📍 Outage Consensus
@@ -158,13 +160,13 @@ No precise GPS history is retained.
 
 ### Phase 2
 
-- [ ] Real-time updates
-- [ ] Spatial consensus
-- [ ] Push notifications
+- [x] Real-time updates
+- [x] Spatial consensus
+- [x] Push notifications
 
 ### Phase 3
 
-- [ ] Analytics Dashboard
+- [x] Analytics Dashboard
 - [ ] Heatmaps
 - [ ] Historical statistics
 
